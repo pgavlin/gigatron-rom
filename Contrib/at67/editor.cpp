@@ -299,6 +299,7 @@ namespace Editor
         _inputKeys["PS2_KB"]       = SDLK_F10;
         _inputKeys["Giga"]         = SDLK_F11;
         _inputKeys["Giga_PS2"]     = SDLK_F12;
+        _inputKeys["Dis"]          = SDLK_SEMICOLON;
 
         // Input configuration
         INIReader iniReader(INPUT_CONFIG_INI);
@@ -915,6 +916,13 @@ namespace Editor
         else if(_sdlKeyCode == SDLK_F9)
         {
             //Audio::nextScore();
+        }
+
+        // Enter disassembler mode
+        else if(_sdlKeyCode == _inputKeys["Dis"])
+        {
+            _prevEditorMode = _editorMode;
+            _editorMode = Dis;
         }
 
         static EditorMode editorMode = Hex;

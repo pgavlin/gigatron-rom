@@ -31,6 +31,7 @@
 #define LOAD_BASE_ADDRESS  0x0200
 #define VARS_BASE_ADDRESS  0x0030
 #define VIDEO_Y_ADDRESS    0x0009
+#define VPC_ADDRESS        0x0016
 
 #define INPUT_CONFIG_INI  "input_config.ini"
 
@@ -38,7 +39,7 @@
 namespace Editor
 {
     enum MemoryMode {RAM=0, ROM0, ROM1, NumMemoryModes};
-    enum EditorMode {Hex=0, Load, Giga, PS2KB, GigaPS2, Debug, NumEditorModes};
+    enum EditorMode {Hex=0, Load, Giga, PS2KB, GigaPS2, Debug, Dis, NumEditorModes};
     enum FileType {File=0, Dir, Fifo, Link, NumFileTypes};
 
 

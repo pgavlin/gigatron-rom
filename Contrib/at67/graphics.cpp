@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "timing.h"
 #include "editor.h"
+#include "disassembler.h"
 #include "loader.h"
 #include "expression.h"
 #include "inih/INIReader.h"
@@ -36,13 +37,11 @@ namespace Graphics
     SDL_Window* _window = NULL;
     SDL_Renderer* _renderer = NULL;
     SDL_Texture* _screenTexture = NULL;
-    SDL_Surface* _screenSurface = NULL;
     SDL_Texture* _helpTexture = NULL;
     SDL_Surface* _helpSurface = NULL;
     SDL_Surface* _fontSurface = NULL;
 
     INIReader _iniReader;
-
 
     uint32_t* getPixels(void) {return _pixels;}
     uint32_t* getColours(void) {return _colours;}
@@ -50,13 +49,11 @@ namespace Graphics
     SDL_Window* getWindow(void) {return _window;}
     SDL_Renderer* getRenderer(void) {return _renderer;}
     SDL_Texture* getScreenTexture(void) {return _screenTexture;}
-    SDL_Surface* getScreenSurface(void) {return _screenSurface;}
     SDL_Texture* getHelpTexture(void) {return _helpTexture;}
     SDL_Surface* getHelpSurface(void) {return _helpSurface;}
     SDL_Surface* getFontSurface(void) {return _fontSurface;}
 
     void setDisplayHelpScreen(bool display) {_displayHelpScreen = display;}
-
 
     SDL_Surface* createSurface(int width, int height)
     {
@@ -78,7 +75,7 @@ namespace Graphics
         if(surface == NULL)
         {
             SDL_Quit();
-            fprintf(stderr, "Graphics::createSurface() :  failed to create SDL surface.\n");
+            fprintf(stderr, "Graphics::createSurface() :  failed to create SDL surface : %s\n", SDL_GetError());
             _EXIT_(EXIT_FAILURE);
         }
 
@@ -308,16 +305,16 @@ namespace Graphics
             _EXIT_(EXIT_FAILURE);
         }
 
+#ifdef CREATE_FONT_HEADER
         // Screen surface
-        _screenSurface = SDL_GetWindowSurface(_window);
-        if(_screenSurface == NULL)
+        SDL_Surface* screenSurface = SDL_GetWindowSurface(_window);
+        if(screenSurface == NULL)
         {
             SDL_Quit();
-            fprintf(stderr, "Graphics::initialise() :  failed to create SDL surface.\n");
+            fprintf(stderr, "Graphics::initialise() :  failed to create SDL surface : %s\n", SDL_GetError());
             _EXIT_(EXIT_FAILURE);
         }
 
-#ifdef CREATE_FONT_HEADER
         // Load font file
         SDL_Surface* fontSurface = SDL_LoadBMP("EmuFont-96x48.bmp");
         if(fontSurface == NULL)
@@ -326,7 +323,7 @@ namespace Graphics
             fprintf(stderr, "Graphics::initialise() : failed to create SDL font surface, you're probably missing 'EmuFont-96x48.bmp' in the current directory/path.\n");
             _EXIT_(EXIT_FAILURE);
         }
-        _fontSurface = SDL_ConvertSurfaceFormat(fontSurface, _screenSurface->format->format, NULL);
+        _fontSurface = SDL_ConvertSurfaceFormat(fontSurface, screenSurface->format->format, NULL);
         SDL_FreeSurface(fontSurface);
         if(_fontSurface == NULL)
         {
@@ -642,7 +639,7 @@ namespace Graphics
                 drawText(std::string(str), _pixels, HEX_START, FONT_CELL_Y*3, (Editor::getHexEdit() && onCursor01) ? 0xFF00FF00 : 0xFFFFFFFF, onCursor01, 4);
             }
             // Hex monitor
-            else
+            else if(Editor::getEditorMode() == Editor::Hex)
             {
                 switch(Editor::getMemoryMode())
                 {
@@ -681,6 +678,25 @@ namespace Graphics
                 {
                     // Draw memory digit selection box                
                     if(Editor::getCursorY() >= 0  &&  Editor::getMemoryMode() == Editor::RAM) drawDigitBox(Editor::getMemoryDigit(), HEX_START_X + Editor::getCursorX()*HEX_CHAR_WIDE, FONT_CELL_Y*4 + Editor::getCursorY()*FONT_CELL_Y, 0xFFFF00FF);
+                }
+            }
+			// vCPU disassembler
+            else
+            {
+                uint16_t addr = Editor::getHexBaseAddress();
+
+                sprintf(str, "vCPU: %04x Vars:", addr);
+                drawText(str, _pixels, 0, FONT_CELL_Y*3, 0xFFFFFFFF, false, 0);
+
+                // Disassemble starting at the current base address.
+                uint16_t vpc = (uint16_t)Cpu::getRAM(VPC_ADDRESS) | ((uint16_t)Cpu::getRAM(VPC_ADDRESS + 1) << 8);
+                for(int i=0; i<HEX_CHARS_Y; i++)
+                {
+                    drawText("                        ", _pixels, 0, FONT_CELL_Y*4 + i*FONT_CELL_Y, 0xFFFFFFFF, false, 0);
+
+                    int p = sprintf(str, "%c %04X ", addr == vpc ? '>' : ' ', addr);
+                    addr += Disassembler::disassemble(addr, Cpu::getRAM, &str[p]);
+                    drawText(std::string(str), _pixels, 0, FONT_CELL_Y*4 + i*FONT_CELL_Y, 0xFFFFFFFF, false, HIGHLIGHT_SIZE);
                 }
             }
 
