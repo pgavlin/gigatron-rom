@@ -639,7 +639,7 @@ namespace Graphics
                 drawText(std::string(str), _pixels, HEX_START, FONT_CELL_Y*3, (Editor::getHexEdit() && onCursor01) ? 0xFF00FF00 : 0xFFFFFFFF, onCursor01, 4);
             }
             // Hex monitor
-            else if(Editor::getEditorMode() == Editor::Hex)
+            else if(Editor::getEditorMode() == Editor::Hex || Editor::getEditorMode() == Editor::Debug)
             {
                 switch(Editor::getMemoryMode())
                 {
