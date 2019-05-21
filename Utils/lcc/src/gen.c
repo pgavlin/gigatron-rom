@@ -333,10 +333,10 @@ static void dumprule(int rulenum) {
 
 	char *str = IR->x._templates[rulenum];
 	if (str == 0)
-		str = "(action)\n";
+		str = IR->x._actionnames[rulenum];
 
 	fprint(stderr, "%s / %s", IR->x._string[rulenum], str);
-	if (!IR->x._isinstruction[rulenum])
+	if (!IR->x._isinstruction[rulenum] || IR->x._templates[rulenum] == 0)
 		fprint(stderr, "\n");
 }
 unsigned emitasm(Node p, int nt) {
@@ -357,7 +357,7 @@ unsigned emitasm(Node p, int nt) {
 	if (rulenum == 0) {
 		debug(fprint(stderr, " (no rule)\n"));
 	} else if (fmt == 0) {
-		debug(fprint(stderr, " (action)\n"));
+		debug(fprint(stderr, " %s\n", IR->x._actionnames[rulenum]));
 	} else {
 		debug(fprint(stderr, " %s\n", fmt));
 	}
@@ -775,7 +775,7 @@ static void genspill(Symbol r, Node last, Symbol tmp) {
 	Symbol s;
 	unsigned ty;
 
-	debug(fprint(stderr, "(spilling %s to local %s)\n", r->x.name, tmp->x.name));
+	debug(fprint(stderr, "(spilling %s to local %s after %x)\n", r->x.name, tmp->x.name, last));
 	debug(fprint(stderr, "(genspill: "));
 	debug(dumptree(last));
 	debug(fprint(stderr, ")\n"));
@@ -803,7 +803,7 @@ static void genreload(Node p, Symbol tmp, int i) {
 	Node q;
 	int ty;
 
-	debug(fprint(stderr, "(replacing %x with a reload from %s)\n", p->x.kids[i], tmp->x.name));
+	debug(fprint(stderr, "(replacing %x with a reload from %s before %x)\n", p->x.kids[i], tmp->x.name, p));
 	debug(fprint(stderr, "(genreload: "));
 	debug(dumptree(p->x.kids[i]));
 	debug(fprint(stderr, ")\n"));
@@ -817,7 +817,7 @@ static void genreload(Node p, Symbol tmp, int i) {
 	linearize(p->x.kids[i], p);
 }
 static int reprune(Node *pp, int k, int n, Node p) {
-	struct node x, *q = *pp;
+	struct node *q = *pp;
 
 	if (q == NULL || k > n)
 		return k;
@@ -827,8 +827,11 @@ static int reprune(Node *pp, int k, int n, Node p) {
 	if (k == n) {
 		debug(fprint(stderr, "(reprune changes %x from %x to %x)\n", pp, *pp, p->x.kids[n]));
 		*pp = p->x.kids[n];
-		x = *p;
-		(IR->x.target)(&x);
+		(IR->x.target)(p);
+
+		(*IR->x._label)(p->kids[n]);
+		debug(dumpcover(p->kids[n], 1, 0));
+		reduce(p->kids[n], 1);
 	}
 	return k + 1;
 }

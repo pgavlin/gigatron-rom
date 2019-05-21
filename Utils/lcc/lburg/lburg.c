@@ -644,6 +644,17 @@ static void emitstring(Rule rules) {
 		print(",%1/* %R */\n", r);
 	}
 	print("};\n");
+	print("static char *%Pactionnames[] = {\n");
+	print("/* 0 */%10,\n");
+	for (r = rules; r; r = r->link) {
+		print("/* %d */%1", r->ern);
+		if (r->action->code == 0)
+			print("0");
+		else
+			print("\"%s\"", r->action->code);
+		print(",%1/* %R */\n", r);
+	}
+	print("};\n");
 	print("static char *%Ptemplates[] = {\n");
 	print("/* 0 */%10,\n");
 	for (r = rules; r; r = r->link) {

@@ -14,6 +14,7 @@ typedef struct {
 	void (*_kids)(Node, int, Node*);
 	char **_string;
 	Action *_actions;
+	char **_actionnames;
 	char **_templates;
 	char *_isinstruction;
 	char **_ntname;

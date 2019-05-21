@@ -836,9 +836,20 @@ static void inst_spill(Node p) {
 	// inst_spill is essentially the same as inst_stloc, but covers an entire spill tree to avoid reentry in the
 	// spiller when spilling vAC.
 	Node vregp = p->kids[1]->kids[0]->kids[0];
-	assert(getregnum(vregp) == 0);
+
+	// If we are spilling vAC, we're all set. Otherwise we've got some extra work to do to avoid clobbering vAC.
+	int regnum = vregp->syms[0]->x.regnode->number;
+	if (regnum != 0) {
+		print("asm.stw('ht')\n");
+		print("asm.ldw('r%d')\n", regnum);
+	}
+
 	setreg(p->kids[1], wregs[0]);
 	inst_stloc(p);
+
+	if (regnum != 0) {
+		print("asm.ldw('ht')\n");
+	}
 }
 
 static void inst_blkcopy(Node p) {
@@ -1428,6 +1439,7 @@ Interface gt1IR = {
 		_kids,
 		_string,
 		_actions,
+		_actionnames,
 		_templates,
 		_isinstruction,
 		_ntname,
